@@ -1,118 +1,118 @@
-# Company Agent Demo (Ollama + FastAPI)
+# Company Agent Demo — RAG over Company Websites (Ollama + FastAPI)
 
-这是一个可产品化的 RAG Demo：
-- 读取 `companies/<slug>/sources.md`
-- 切块并调用 Ollama `/api/embeddings` 生成向量
-- 支持多语言自动回复、引用编号、API Key 鉴权
-- 支持 Sources 可跳转官网命中段落（Text Fragments）
-- 提供网页 Demo、FAQ 缓存与公司导入流水线
-- 自动发现 URL：robots.txt sitemap → 常见 sitemap → HTML sitemap → RSS → BFS 扩散
-- 语言过滤：默认只抓英文 + 简体中文（其它语言版本页面直接跳过）
-- JS 兜底抓取：requests 内容过短/站点偏 SPA 时自动用 Playwright 渲染抓取（可选全站 JS 模式）
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=python,fastapi,html,css,js,bash,git,github,linux" />
+</p>
 
-## 目录结构
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-ready-009688?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Ollama-local%20LLM-black" />
+  <img src="https://img.shields.io/badge/RAG-embeddings%20%2B%20citations-orange" />
+  <img src="https://img.shields.io/badge/Streaming-SSE-orange" />
+</p>
+
+<p align="center">
+  <b>English</b> | <a href="#%E4%B8%AD%E6%96%87">中文</a>
+</p>
+
+A productizable RAG demo: **ingest public company websites → build an index → ask questions with citations**.
+
+> Notes for the public repo: generated data (raw HTML / extracted pages / vectors / debug logs) and secrets are intentionally excluded via `.gitignore`.
+
+---
+
+## Demo
+
+> Add your own assets:
+>
+> - Screenshot: `assets/screenshot.png`
+> - GIF (optional): `assets/demo.gif`
+
+![Web Demo Screenshot](assets/screenshot.png)
+
+<!-- Optional -->
+<!-- ![Demo GIF](assets/demo.gif) -->
+
+---
+
+## Features
+
+- **Company-scoped knowledge base** (one index per `companies/<slug>`)
+- **Multilingual answers** (auto language selection)
+- **Citations + deep links** (Sources with Text Fragments when supported)
+- **API key auth** via `X-API-Key`
+- **Web UI** + **SSE streaming**
+- Optional: **FAQ cache** (Quick Questions)
+
+---
+
+## Quickstart
+
+### Prerequisites
+
+- Python 3.10+
+- Ollama running locally
+
+### Run
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Pull models (adjust to your preference)
+ollama pull qwen3:8b
+ollama pull bge-m3:latest
+
+# Build index for an example company
+python tools/build_index.py acme
+
+# Start the API server
+uvicorn app.server:app --reload --port 8000
 ```
-company-agent-demo/
-  app/
-    __init__.py
-    config.py
-    lang.py
-    prompt.py
-    rag.py
-    server.py
-  tools/
-    build_index.py
-  scripts/
-    ingest_company.py
-    reindex_all.py
-  companies/
-    <slug>/
-      sources.md     建索引用的（每个页面的文本，url来源）
-      sources_meta.json   记录抓的url，存的对应文件，时间--做增量更新
-      faq.json      快速问答
-  static/
-    index.html
-  config.json
-  requirements.txt
-  README.md
-  .gitignore
+
+Open the web demo:
+
+```text
+http://localhost:8000/
 ```
 
-## 配置说明
-- 默认配置在 `app/config.py`
-- 根目录 `config.json` 会覆盖默认值
-- 环境变量优先级最高（env > config.json > defaults）
+---
 
-示例 `config.json`（已提供，可直接修改）：
+## Configuration
+
+Configuration priority:
+
+1. Environment variables
+2. `config.json`
+3. Defaults in `app/config.py`
+
+**Recommended for public repos**:
+
+- Keep `config.json` / `.env` **local only** (already in `.gitignore`).
+- Commit an example template: `config.example.json` or `.env.example`.
+
+Example `config.example.json`:
+
 ```json
 {
   "OLLAMA_BASE_URL": "http://localhost:11434",
   "LLM_MODEL": "qwen3:8b",
   "EMBED_MODEL": "bge-m3:latest",
-  "API_KEY": "change-me-to-a-long-random-string"
+  "API_KEY": "YOUR_LONG_RANDOM_KEY"
 }
 ```
 
-说明：
-- `API_KEY` 为空时不启用鉴权；非空则要求请求头 `X-API-Key`。
+Auth behavior:
 
-## 从零开始运行
-以下命令在 macOS 上测试通过：
+- If `API_KEY` is empty, auth is disabled.
+- If non-empty, send `X-API-Key: <API_KEY>`.
 
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-ollama pull qwen3:8b && ollama pull bge-m3:latest
-python tools/build_index.py acme
-uvicorn app.server:app --reload --port 8000
-```
+---
 
-## 网页 Demo
-启动服务后访问：
-```
-http://localhost:8000/
-```
-页面顶部可以输入 API Key。
+## Ingestion Pipeline
 
-### 网页使用说明（1 分钟上手）
-1. 在“API Key”输入框输入：simon
-2. 点击「重新加载」：刷新公司列表与 Quick Questions（导入新公司后必须点一次）
-3. 在「公司」下拉框选择要查询的公司
-4. 两种问答方式：
-   - 快速问题（Quick Questions）：预先缓存好的常见问题，点击即可立即出答案（不用等）
-   - 实时问答：在输入框输入你的问题，按 Enter 或点击发送，等待模型响应（会检索公司网页资料并给出引用 Sources）
-
-小提示：
-- 若某公司没有 Quick Questions，说明 faq.json 未生成，仍可使用实时问答。
-- 答案中的 Sources 可点击跳转到官网对应段落。
-
-## curl 测试
-```bash
-curl http://localhost:8000/health
-```
-
-带鉴权访问：
-```bash
-curl -H "X-API-Key: change-me-to-a-long-random-string" \
-  "http://localhost:8000/chat?company=acme&q=你们的主营业务是什么？"
-```
-
-## 流式输出（SSE）
-使用 POST 并带 `stream=1`：
-```bash
-curl -H "X-API-Key: change-me-to-a-long-random-string" \
-  -X POST "http://localhost:8000/chat?company=acme&q=介绍一下&stream=1"
-```
-
-## Sources 跳转说明（Text Fragments）
-Sources 返回 `deep_link`，链接形式为：
-```
-https://example.com/page#:~:text=<snippet>
-```
-浏览器支持时会高亮命中片段并滚动到位置。
-
-## 公司导入流水线（Onboarding Pipeline）
-一键导入公开网页并生成索引与 FAQ：
+One-command onboarding: ingest public pages → index → (optional) generate FAQ.
 
 ```bash
 python scripts/ingest_company.py \
@@ -124,143 +124,168 @@ python scripts/ingest_company.py \
   --gen-faq true
 ```
 
-说明：
-- `--seed` 可多次传入，用于指定多个入口页面
-- 默认仅抓取同域名页面，抓取间隔默认 1 秒
-- 抽取正文使用 trafilatura，仅用于公开网页内容
+Notes:
 
-## 批量重建索引
-```bash
-python scripts/reindex_all.py
+- You can pass `--seed` multiple times.
+- Default: same-domain only; polite crawling with a delay.
+
+<details>
+<summary><b>Crawling strategy (details)</b></summary>
+
+- URL discovery order: `robots.txt sitemap` → common sitemap paths → HTML sitemap → RSS → BFS expansion
+- Language filtering: default keep English + Simplified Chinese; skip other locales
+- JS fallback: if `requests` content is too short or site is SPA-like, use Playwright rendering (optional)
+
+</details>
+
+---
+
+## Repo Layout
+
+```text
+company-agent-demo/
+  app/                 # FastAPI service + RAG pipeline
+  tools/               # Index utilities (e.g., build_index.py)
+  scripts/             # Ingestion + reindex scripts
+  static/              # Web UI
+  companies/
+    _example/           # (recommended) tiny sample for public repo
+  requirements.txt
+  README.md
+  .gitignore
 ```
 
-## FAQ 缓存
-- FAQ 保存在 `companies/<slug>/faq.json`
-- 网页 Demo 会优先展示 Quick Questions
-- 若 FAQ 不存在会回退到实时问答
+Generated artifacts (kept local; ignored by git):
 
-## 常见问题
-- 如果报错“找不到索引”，请先运行：`python tools/build_index.py <company>`
-- 如果 Ollama 不可用，请先启动 Ollama 并确保模型已 `pull`
-- 抓取遵守频率限制，仅用于公开网页与测试用途
-
-<div align="center">
-
-# Company Agent Demo (Ollama + FastAPI)
-
-**可产品化的 RAG 公司知识库 Demo｜多语言｜引用溯源｜API Key 鉴权｜网页 UI**
-
-<!-- Badges: 你可以按需删减/替换 -->
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-ready-009688)
-![RAG](https://img.shields.io/badge/RAG-embeddings%20%2B%20citations-orange)
-![License](https://img.shields.io/badge/license-MIT-informational)
-
-</div>
-
-> 这个项目演示了一个“按公司导入公开网页 → 建索引 → 对话问答”的 RAG 流水线：
-> - 读取 `companies/<slug>/sources.md`
-> - 切块并调用 Ollama `/api/embeddings` 生成向量
-> - 多语言自动回复、引用编号（带 deep link）、API Key 鉴权
-> - 网页 Demo（含 Quick Questions/FAQ 缓存）与公司导入脚本
+- `companies/**/raw/` (raw HTML)
+- `companies/**/extracted/` (cleaned text)
+- `companies/**/rag/` (vectors / index metadata)
+- `**/crawl_debug*.json`, logs, etc.
 
 ---
 
-## 目录
+## API Examples
 
-- [效果预览](#效果预览)
-- [功能亮点](#功能亮点)
-- [目录结构](#目录结构)
-- [从零开始运行](#从零开始运行)
-- [配置说明](#配置说明)
-- [接口调用示例](#接口调用示例)
-- [Sources 跳转说明（Text Fragments）](#sources-跳转说明text-fragments)
-- [公司导入流水线（Onboarding Pipeline）](#公司导入流水线onboarding-pipeline)
-- [批量重建索引](#批量重建索引)
-- [FAQ 缓存](#faq-缓存)
-- [常见问题](#常见问题)
-- [Roadmap](#roadmap)
+<details>
+<summary><b>Health check</b></summary>
+
+```bash
+curl http://localhost:8000/health
+```
+
+</details>
+
+<details>
+<summary><b>Chat (with API key)</b></summary>
+
+```bash
+curl -H "X-API-Key: YOUR_LONG_RANDOM_KEY" \
+  "http://localhost:8000/chat?company=acme&q=What%20does%20the%20company%20do%3F"
+```
+
+</details>
+
+<details>
+<summary><b>SSE streaming</b></summary>
+
+```bash
+curl -H "X-API-Key: YOUR_LONG_RANDOM_KEY" \
+  -X POST "http://localhost:8000/chat?company=acme&q=Give%20me%20a%20summary&stream=1"
+```
+
+</details>
 
 ---
 
-## 效果预览
+## Citations (Text Fragments)
 
-> 建议你放 1 张截图 + 1 个动图（可选）。
+Sources may return a deep link like:
+
+```text
+https://example.com/page#:~:text=<snippet>
+```
+
+When supported by the browser, it highlights the matched snippet and scrolls to it.
+
+---
+
+## Troubleshooting
+
+- **“Index not found”** → run `python tools/build_index.py <company>` first.
+- **Ollama not running / model missing** → start Ollama and `ollama pull ...`.
+- **Auth errors** → check `API_KEY` and request header `X-API-Key`.
+- **Empty answers / no citations** → confirm ingestion succeeded and pages were extracted.
+
+---
+
+## License
+
+TBD.
+
+---
+
+# 中文
+
+<p align="center">
+  <a href="#company-agent-demo--rag-over-company-websites-ollama--fastapi">English</a> | <b>中文</b>
+</p>
+
+一个可产品化的 RAG Demo：**导入公司公开网页 → 建索引 → 带引用问答**。
+
+> 公开仓库说明：生成数据（raw HTML / 抽取文本 / 向量 / debug/log）与敏感配置会被 `.gitignore` 过滤，不会提交。
+
+---
+
+## 演示
+
+> 建议你放入：
 >
 > - 截图：`assets/screenshot.png`
-> - 动图：`assets/demo.gif`
->
-> 然后把下面两行的路径替换成你自己的文件。
+> - 动图（可选）：`assets/demo.gif`
 
 ![Web Demo Screenshot](assets/screenshot.png)
 
-<!-- 可选：如果你有录屏动图，取消注释 -->
+<!-- 可选 -->
 <!-- ![Demo GIF](assets/demo.gif) -->
 
 ---
 
 ## 功能亮点
 
-- ✅ **可产品化的 RAG 结构**：公司维度的知识库（`companies/<slug>/...`）
-- ✅ **多语言自动回复**：根据用户问题自动选择语言
-- ✅ **带编号引用 + 深链跳转**：Sources 返回 `deep_link`，可定位到命中文本
-- ✅ **API Key 鉴权**：通过请求头 `X-API-Key` 控制访问
-- ✅ **网页 Demo**：开箱即用的静态页面 UI
-- ✅ **FAQ 缓存**：优先展示 Quick Questions，不存在则回退实时问答
-
----
-
-## 目录结构
-
-```
-company-agent-demo/
-  app/
-    __init__.py
-    config.py
-    lang.py
-    prompt.py
-    rag.py
-    server.py
-  tools/
-    build_index.py
-  scripts/
-    ingest_company.py
-    reindex_all.py
-  companies/
-    <slug>/
-      sources.md          建索引用（每个页面文本 + url 来源）
-      sources_meta.json   记录抓取 url、对应文件、时间（用于增量更新）
-      faq.json            快速问答缓存
-  static/
-    index.html
-  config.json
-  requirements.txt
-  README.md
-  .gitignore
-```
+- **公司维度知识库**（每个 `companies/<slug>` 一套索引）
+- **多语言自动回复**（根据问题自动选择语言）
+- **引用编号 + 深链跳转**（Sources 支持 Text Fragments 时可定位命中段落）
+- **API Key 鉴权**：请求头 `X-API-Key`
+- **网页 UI** + **SSE 流式输出**
+- 可选：**FAQ 缓存**（Quick Questions）
 
 ---
 
 ## 从零开始运行
 
-以下命令在 macOS 上测试通过：
+### 依赖
+
+- Python 3.10+
+- 本地 Ollama
+
+### 运行
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 拉取模型（按需更换）
+# 拉取模型（可按需替换）
 ollama pull qwen3:8b
 ollama pull bge-m3:latest
 
-# 为公司构建索引（示例：acme）
+# 为示例公司构建索引
 python tools/build_index.py acme
 
 # 启动服务
 uvicorn app.server:app --reload --port 8000
 ```
 
-启动后访问网页 Demo：
+打开网页 Demo：
 
 ```text
 http://localhost:8000/
@@ -270,65 +295,38 @@ http://localhost:8000/
 
 ## 配置说明
 
-- 默认配置在 `app/config.py`
-- 根目录 `config.json` 会覆盖默认值
-- 环境变量优先级最高（env > config.json > defaults）
+配置优先级：
 
-示例 `config.json`（已提供，可直接修改）：
+1. 环境变量
+2. `config.json`
+3. `app/config.py` 默认值
+
+公开仓库推荐做法：
+
+- `config.json` / `.env` 只保留在本地（已在 `.gitignore` 中）。
+- 提交 `config.example.json` 或 `.env.example` 作为模板。
+
+示例 `config.example.json`：
 
 ```json
 {
   "OLLAMA_BASE_URL": "http://localhost:11434",
   "LLM_MODEL": "qwen3:8b",
   "EMBED_MODEL": "bge-m3:latest",
-  "API_KEY": "change-me-to-a-long-random-string"
+  "API_KEY": "YOUR_LONG_RANDOM_KEY"
 }
 ```
 
-说明：
-- `API_KEY` 为空时不启用鉴权；非空则要求请求头 `X-API-Key`。
+鉴权：
 
----
-
-## 接口调用示例
-
-健康检查：
-
-```bash
-curl http://localhost:8000/health
-```
-
-带鉴权访问：
-
-```bash
-curl -H "X-API-Key: change-me-to-a-long-random-string" \
-  "http://localhost:8000/chat?company=acme&q=你们的主营业务是什么？"
-```
-
-流式输出（SSE）：
-
-```bash
-curl -H "X-API-Key: change-me-to-a-long-random-string" \
-  -X POST "http://localhost:8000/chat?company=acme&q=介绍一下&stream=1"
-```
-
----
-
-## Sources 跳转说明（Text Fragments）
-
-Sources 会返回 `deep_link`，链接形式为：
-
-```text
-https://example.com/page#:~:text=<snippet>
-```
-
-浏览器支持时会高亮命中片段并滚动到位置。
+- `API_KEY` 为空：不启用鉴权。
+- `API_KEY` 非空：请求需带 `X-API-Key: <API_KEY>`。
 
 ---
 
 ## 公司导入流水线（Onboarding Pipeline）
 
-一键导入公开网页并生成索引与 FAQ：
+一键导入公开网页 → 建索引 →（可选）生成 FAQ：
 
 ```bash
 python scripts/ingest_company.py \
@@ -341,50 +339,99 @@ python scripts/ingest_company.py \
 ```
 
 说明：
-- `--seed` 可多次传入，用于指定多个入口页面
-- 默认仅抓取同域名页面，抓取间隔默认 1 秒
-- 抽取正文使用 trafilatura，仅用于公开网页内容
+
+- `--seed` 可多次传入（多个入口页面）。
+- 默认同域抓取，并带频率限制。
+
+<details>
+<summary><b>抓取策略（展开查看）</b></summary>
+
+- URL 自动发现顺序：`robots.txt sitemap` → 常见 sitemap → HTML sitemap → RSS → BFS 扩散
+- 语言过滤：默认只抓英文 + 简体中文（其它语言版本跳过）
+- JS 兜底：站点偏 SPA / 内容过短时可用 Playwright 渲染抓取（可选）
+
+</details>
 
 ---
 
-## 批量重建索引
+## 目录结构
 
-```bash
-python scripts/reindex_all.py
+```text
+company-agent-demo/
+  app/                 # FastAPI 服务 + RAG 流水线
+  tools/               # 建索引工具（build_index.py 等）
+  scripts/             # 导入/重建脚本
+  static/              # 网页 UI
+  companies/
+    _example/           #（推荐）公开仓库只保留极小示例
+  requirements.txt
+  README.md
+  .gitignore
 ```
 
+本地生成物（不提交）：
+
+- `companies/**/raw/`（原始 HTML）
+- `companies/**/extracted/`（清洗后的正文）
+- `companies/**/rag/`（向量/索引元数据）
+- `**/crawl_debug*.json`、日志等
+
 ---
 
-## FAQ 缓存
+## 接口调用示例
 
-- FAQ 保存在 `companies/<slug>/faq.json`
-- 网页 Demo 会优先展示 Quick Questions
-- 若 FAQ 不存在会回退到实时问答
+<details>
+<summary><b>健康检查</b></summary>
+
+```bash
+curl http://localhost:8000/health
+```
+
+</details>
+
+<details>
+<summary><b>带鉴权问答</b></summary>
+
+```bash
+curl -H "X-API-Key: YOUR_LONG_RANDOM_KEY" \
+  "http://localhost:8000/chat?company=acme&q=%E4%BD%A0%E4%BB%AC%E7%9A%84%E4%B8%BB%E8%90%A5%E4%B8%9A%E5%8A%A1%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"
+```
+
+</details>
+
+<details>
+<summary><b>SSE 流式输出</b></summary>
+
+```bash
+curl -H "X-API-Key: YOUR_LONG_RANDOM_KEY" \
+  -X POST "http://localhost:8000/chat?company=acme&q=%E4%BB%8B%E7%BB%8D%E4%B8%80%E4%B8%8B&stream=1"
+```
+
+</details>
+
+---
+
+## Sources 跳转（Text Fragments）
+
+Sources 可能返回类似 deep link：
+
+```text
+https://example.com/page#:~:text=<snippet>
+```
+
+浏览器支持时会高亮命中片段并自动滚动到位置。
 
 ---
 
 ## 常见问题
 
-- 如果报错“找不到索引”，请先运行：`python tools/build_index.py <company>`
-- 如果 Ollama 不可用，请先启动 Ollama 并确保模型已 `pull`
-- 抓取遵守频率限制，仅用于公开网页与测试用途
+- **提示“找不到索引”** → 先运行 `python tools/build_index.py <company>`。
+- **Ollama 不可用/模型缺失** → 启动 Ollama 并执行 `ollama pull ...`。
+- **鉴权失败** → 检查 `API_KEY` 与请求头 `X-API-Key`。
+- **回答为空/无引用** → 确认导入与抽取成功，且索引已构建。
 
 ---
 
-## Roadmap
+## License
 
-- [ ] 添加 Docker / docker-compose 一键启动
-- [ ] 增加更漂亮的前端（搜索/引用展开/多公司切换）
-- [ ] 增量更新与定时抓取（按 `sources_meta.json`）
-- [ ] 更完善的评测与日志（trace / latency / token usage）
-
-```
-## 迭代记录
-
-> 约定：每次对抓取/索引/FAQ/引用链路做调整，都在这里追加一条，方便回溯。
-
-### 2026-01-06
-- 抓取稳定性：为 requests 增加 `Accept-Language: zh-CN,zh;q=0.9,en;q=0.8`，减少站点按 Geo/IP 跳转到其它语言版本。
-- 编码修复：统一用 `resp.apparent_encoding` 纠正常见的 `ISO-8859-1` 误判，减少 Sources 乱码（mojibake）。
-- 邮箱提取：支持 Cloudflare Email Protection（`/cdn-cgi/l/email-protection` / `data-cfemail`）解码替换，避免出现 `[email protected]`。
-- 语言兜底：若正文含日文假名/韩文 Hangul，则不入库，避免污染索引与引用。
+待补充。
