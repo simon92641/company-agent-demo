@@ -1,0 +1,1345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Company Agent Demo</title>
+  <style>
+    :root {
+      --tiffany: #81d8d0;
+      --tiffany-deep: #4fbfb4;
+      --tiffany-ink: #0f3f3b;
+      --midnight: #0b1f2a;
+      --mist: #f5f7f9;
+      --pearl: #ffffff;
+      --slate: #5b6770;
+      --silver: rgba(15, 63, 59, 0.12);
+      --shadow: 0 28px 70px rgba(11, 31, 42, 0.18);
+      --glass: rgba(255, 255, 255, 0.84);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Avenir", sans-serif;
+      color: var(--midnight);
+      background:
+        radial-gradient(circle at top left, rgba(129, 216, 208, 0.55), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(79, 191, 180, 0.4), transparent 55%),
+        linear-gradient(180deg, #c8f0ea 0%, #b2e6df 40%, #a3ddd6 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -18% 12% auto auto;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(129, 216, 208, 0.45), transparent 70%);
+      filter: blur(1px);
+      z-index: -1;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto auto 6% 10%;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(11, 31, 42, 0.25), transparent 70%);
+      filter: blur(2px);
+      z-index: -1;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      display: grid;
+      gap: 24px;
+      animation: rise 0.8s ease-out;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 40px);
+      letter-spacing: 0.2px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--slate);
+    }
+
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--silver);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .feature-card {
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(11, 31, 42, 0.12);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 10px 24px rgba(11, 31, 42, 0.08);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--midnight);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--slate);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(11, 31, 42, 0.14);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--pearl);
+      color: var(--midnight);
+      box-shadow: inset 0 1px 2px rgba(11, 31, 42, 0.06);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--tiffany-ink);
+      background: linear-gradient(135deg, var(--tiffany), #b7efea);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(79, 191, 180, 0.35);
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid rgba(11, 31, 42, 0.2);
+      color: var(--slate);
+      font-weight: 600;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--slate);
+      min-height: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status.error {
+      color: #b91c1c;
+    }
+
+    .status.success {
+      color: var(--tiffany-deep);
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(15, 63, 59, 0.2);
+      border-top-color: var(--tiffany-deep);
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    .input-error {
+      border-color: #b91c1c;
+      box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15);
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--slate);
+    }
+
+    .answer {
+      white-space: pre-wrap;
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    details {
+      border: 1px solid rgba(11, 31, 42, 0.12);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: var(--pearl);
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--slate);
+    }
+
+    details p {
+      margin: 12px 0 0;
+      color: var(--midnight);
+      line-height: 1.5;
+    }
+
+    .sources {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+      color: var(--slate);
+      font-size: 13px;
+    }
+
+    .help-button {
+      white-space: nowrap;
+    }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown summary {
+      list-style: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .dropdown summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .dropdown-panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 10px);
+      width: min(520px, 86vw);
+      background: var(--pearl);
+      border: 1px solid rgba(11, 31, 42, 0.16);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      z-index: 999;
+    }
+
+    .dropdown-panel h3 {
+      margin: 0 0 10px;
+    }
+
+    .dropdown-panel .feature-grid {
+      gap: 10px;
+    }
+
+    .dropdown-panel .feature-card {
+      box-shadow: none;
+      border-radius: 14px;
+      border: 1px solid rgba(11, 31, 42, 0.12);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 31, 42, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--pearl);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: var(--shadow);
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .modal ol,
+    .modal ul {
+      margin: 10px 0 0 18px;
+      color: var(--midnight);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .drawer {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: min(420px, 92vw);
+      height: calc(100vh - 36px);
+      /* 苹果毛玻璃风格 */
+      background: rgba(255, 255, 255, 0.66);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      box-shadow: 0 28px 70px rgba(11, 31, 42, 0.18);
+      border-radius: 22px;
+      padding: 18px;
+      overflow: auto;
+
+      /* 默认收起：不挡住用户使用 */
+      transform: translateX(110%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s ease-out, opacity 0.18s ease-out;
+      z-index: 1200;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .drawer h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .drawer .close {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700;
+      font-size: 13px;
+      border: 1px solid rgba(11, 31, 42, 0.2);
+      background: transparent;
+      color: var(--slate);
+    }
+
+    .drawer .tabrow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 8px 0 14px;
+    }
+
+    .drawer .tab {
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(11, 31, 42, 0.2);
+      background: transparent;
+      color: var(--slate);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .drawer .tab.active {
+      background: rgba(129, 216, 208, 0.22);
+      border-color: rgba(79, 191, 180, 0.55);
+      color: var(--midnight);
+    }
+
+    .drawer .section {
+      display: none;
+    }
+
+    .drawer .section.active {
+      display: block;
+    }
+
+    .drawer .feature-grid {
+      grid-template-columns: 1fr;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(14px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* 语言切换按钮 */
+    .lang-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(11, 31, 42, 0.2);
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--slate);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .lang-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(79, 191, 180, 0.7);
+    }
+
+    /* 更新计划（右侧抽屉内） */
+    .updates {
+      display: grid;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .updates-day {
+      border: 1px solid rgba(11, 31, 42, 0.12);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .updates-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--midnight);
+      margin-bottom: 8px;
+    }
+
+    .updates-date .badge {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(79, 191, 180, 0.5);
+      background: rgba(129, 216, 208, 0.18);
+      color: var(--tiffany-ink);
+    }
+
+    .updates-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .updates-item {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 10px;
+      align-items: start;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--midnight);
+    }
+
+    .updates-item .check {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(11, 31, 42, 0.18);
+      background: rgba(255, 255, 255, 0.8);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--tiffany-ink);
+      margin-top: 1px;
+    }
+
+    .updates-item.done .check {
+      border-color: rgba(79, 191, 180, 0.55);
+      background: rgba(129, 216, 208, 0.22);
+    }
+
+    .updates-item.done .text {
+      text-decoration: line-through;
+      color: rgba(11, 31, 42, 0.55);
+    }
+
+    .updates-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--slate);
+    }
+
+    .updates-note code {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(11, 31, 42, 0.12);
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1 data-i18n="app.title">Company Agent Demo</h1>
+        <p data-i18n="app.subtitle">Multilingual Q&A, citations, API key auth.</p>
+      </div>
+      <div class="meta-row">
+        <span><span data-i18n="meta.apiBase">API Base</span>: <b>/chat</b></span>
+        <span><span data-i18n="meta.topk">RAG TopK</span>: <b>8</b></span>
+        <button id="langToggle" class="lang-toggle" type="button" aria-label="Language">
+          <span class="lang-dot" aria-hidden="true"></span>
+          <span id="langToggleText">EN</span>
+        </button>
+        <button id="updatesButton" class="secondary help-button" type="button" data-i18n="btn.updates">Updates</button>
+        <button id="featuresButton" class="secondary help-button" type="button" data-i18n="btn.features">Features</button>
+        <button id="helpButton" class="secondary help-button" type="button" data-i18n="btn.help">Help</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="grid">
+        <label>
+          <span data-i18n="form.apiKey">API Key</span>
+          <input id="apiKey" type="password" placeholder="" data-i18n-placeholder="ph.apiKey" />
+        </label>
+        <label>
+          <span data-i18n="form.company">Company</span>
+          <select id="companySelect">
+            <option value="" data-i18n="form.companyPlaceholder">Load companies first</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="form.lang">Language (optional)</span>
+          <input id="langInput" type="text" placeholder="" data-i18n-placeholder="ph.lang" />
+        </label>
+        <label>
+          <span data-i18n="form.stream">Streaming</span>
+          <select id="streamSelect">
+            <option value="on" selected data-i18n="form.on">On</option>
+            <option value="off" data-i18n="form.off">Off</option>
+          </select>
+        </label>
+      </div>
+      <div id="companyMeta" class="meta-row" style="margin-top:12px;"></div>
+
+      <label style="margin-top:16px;">
+        <span data-i18n="form.realtime">Realtime Q&A</span>
+        <textarea id="questionInput" placeholder="" data-i18n-placeholder="ph.question"></textarea>
+      </label>
+      <div class="hint"><span data-i18n="hint.realtime">Realtime Q&A searches sources and calls the model. It usually takes a few seconds. For instant answers, use Quick Questions above.</span></div>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+        <button id="askButton"><span data-i18n="btn.send">Send</span></button>
+        <button id="loadCompanies" class="secondary"><span data-i18n="btn.reload">Reload</span></button>
+      </div>
+
+      <div id="status" class="status" style="margin-top:12px;">
+        <span id="statusSpinner" class="spinner" aria-hidden="true"></span>
+        <span id="statusText"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0;" data-i18n="section.quick">Quick Questions</h2>
+      <div id="quickQuestions" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+      <div style="margin-top:16px;">
+        <button id="askAnyway" class="secondary"><span data-i18n="btn.askAnyway">Ask anyway</span></button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0;" data-i18n="section.answer">Answer</h2>
+      <div id="answer" class="answer" data-i18n="answer.wait">Waiting for your question...</div>
+      <div id="langUsed" class="meta-row" style="margin-top:12px;"></div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0;" data-i18n="section.sources">Sources</h2>
+      <div id="sources" class="sources"></div>
+    </section>
+  </main>
+
+  <aside id="drawer" class="drawer" aria-labelledby="drawerTitle">
+    <header>
+      <h3 id="drawerTitle">帮助</h3>
+      <button id="drawerClose" class="close" aria-label="Collapse">收起</button>
+    </header>
+
+    <div class="tabrow">
+      <button id="tabHelp" class="tab active" type="button" data-i18n="drawer.helpTab">Help</button>
+      <button id="tabFeatures" class="tab" type="button" data-i18n="drawer.featuresTab">Features</button>
+      <button id="tabUpdates" class="tab" type="button" data-i18n="drawer.updatesTab">Updates</button>
+    </div>
+
+    <section id="drawerHelp" class="section active">
+      <h4 style="margin: 0 0 8px;" data-i18n="drawer.helpTitle">How to use (1 minute)</h4>
+      <ol>
+        <li data-i18n="drawer.step1">Enter API Key: simon</li>
+        <li data-i18n="drawer.step2">Click Reload to refresh company list and Quick Questions (after importing a new company).</li>
+        <li data-i18n="drawer.step3">Choose a company from the dropdown.</li>
+        <li data-i18n="drawer.step4">Two ways to ask:</li>
+      </ol>
+      <ul>
+        <li><b data-i18n="drawer.quickBold">Quick Questions</b>：<span data-i18n="drawer.quickDesc">Pre-generated cached FAQs. Click for instant answers (no wait).</span></li>
+        <li><b data-i18n="drawer.realtimeBold">Realtime Q&A</b>：<span data-i18n="drawer.realtimeDesc">Type your question and press Enter or Send. It searches sources and answers with citations.</span></li>
+      </ul>
+      <p class="updates-note" data-i18n="drawer.helpNote">
+        Tip: If a company has no Quick Questions, its faq.json hasn't been generated yet. You can still use Realtime Q&A. Sources are clickable.
+      </p>
+    </section>
+
+    <section id="drawerFeatures" class="section">
+      <h4 style="margin: 0 0 8px;" data-i18n="drawer.featuresTitle">Features</h4>
+      <div class="feature-grid">
+        <div class="feature-card" data-i18n="feat.kb">Company knowledge base: ingest website → build index → Q&A by company</div>
+        <div class="feature-card" data-i18n="feat.faq">Quick Questions (FAQ cache): pre-generated, click for instant answers</div>
+        <div class="feature-card" data-i18n="feat.rt">Realtime Q&A: retrieves sources and calls the model (may take a few seconds)</div>
+        <div class="feature-card" data-i18n="feat.cite">Citations: answers include Sources with deep links to the page</div>
+        <div class="feature-card" data-i18n="feat.auth">API Key auth: enter the API Key at the top to use the demo</div>
+      </div>
+      <p style="margin:10px 0 0; font-size:12px; color: var(--slate);" data-i18n="drawer.featuresNote">Tip: use Quick Questions for instant answers; use Realtime Q&A for specific questions.</p>
+    </section>
+
+    <section id="drawerUpdates" class="section">
+      <h4 style="margin: 0 0 8px;" data-i18n="drawer.updatesTitle">Updates</h4>
+      <div id="updatesBody" class="updates">
+        <div class="updates-day">
+          <div class="updates-date"><span class="badge">…</span> <span data-i18n="updates.loading">Loading update plan…</span></div>
+        </div>
+      </div>
+      <div class="updates-note">
+        <span data-i18n="updates.note">You can edit the update plan in</span> <code>static/updates.md</code>.
+      </div>
+    </section>
+  </aside>
+
+  <script>
+    const apiKeyInput = document.getElementById("apiKey");
+    const companySelect = document.getElementById("companySelect");
+    const langInput = document.getElementById("langInput");
+    const questionInput = document.getElementById("questionInput");
+    const statusEl = document.getElementById("status");
+    const statusTextEl = document.getElementById("statusText");
+    const statusSpinnerEl = document.getElementById("statusSpinner");
+    const answerEl = document.getElementById("answer");
+    const langUsedEl = document.getElementById("langUsed");
+    const sourcesEl = document.getElementById("sources");
+    const companyMetaEl = document.getElementById("companyMeta");
+    const streamSelect = document.getElementById("streamSelect");
+    const quickQuestionsEl = document.getElementById("quickQuestions");
+    const askAnywayBtn = document.getElementById("askAnyway");
+    const helpButton = document.getElementById("helpButton");
+    const featuresButton = document.getElementById("featuresButton");
+    const updatesButton = document.getElementById("updatesButton");
+    const drawer = document.getElementById("drawer");
+    const drawerClose = document.getElementById("drawerClose");
+    const tabHelp = document.getElementById("tabHelp");
+    const tabFeatures = document.getElementById("tabFeatures");
+    const tabUpdates = document.getElementById("tabUpdates");
+    const drawerHelp = document.getElementById("drawerHelp");
+    const drawerFeatures = document.getElementById("drawerFeatures");
+    const drawerUpdates = document.getElementById("drawerUpdates");
+    const HELP_SEEN_KEY = "company-agent-help-seen";
+    const LANG_KEY = "company-agent-lang";
+    let currentLang = "en";
+    const langToggle = document.getElementById("langToggle");
+    const langToggleText = document.getElementById("langToggleText");
+    const updatesBody = document.getElementById("updatesBody");
+
+    function getHeaders() {
+      const apiKey = apiKeyInput.value.trim();
+      return apiKey ? { "X-API-Key": apiKey } : {};
+    }
+
+    const I18N = {
+      en: {
+        "app.title": "Company Agent Demo",
+        "app.subtitle": "Multilingual Q&A, citations, API key auth.",
+        "meta.apiBase": "API Base",
+        "meta.topk": "RAG TopK",
+        "btn.help": "Help",
+        "btn.features": "Features",
+        "btn.updates": "Updates",
+        "form.apiKey": "API Key",
+        "ph.apiKey": "e.g., simon",
+        "form.company": "Company",
+        "form.companyPlaceholder": "Load companies first",
+        "form.lang": "Language (optional)",
+        "ph.lang": "auto / en / zh / ja ...",
+        "form.stream": "Streaming",
+        "form.on": "On",
+        "form.off": "Off",
+        "form.realtime": "Realtime Q&A",
+        "ph.question": "Type your question…",
+        "hint.realtime": "Realtime Q&A searches sources and calls the model. It usually takes a few seconds. For instant answers, use Quick Questions above.",
+        "btn.send": "Send",
+        "btn.reload": "Reload",
+        "section.quick": "Quick Questions",
+        "section.features": "Features",
+        "btn.askAnyway": "Ask anyway",
+        "section.answer": "Answer",
+        "answer.wait": "Waiting for your question…",
+        "section.sources": "Sources",
+        "drawer.helpTab": "Help",
+        "drawer.featuresTab": "Features",
+        "drawer.updatesTab": "Updates",
+        "drawer.helpTitle": "How to use (1 minute)",
+        "drawer.step1": "Enter API Key: simon",
+        "drawer.step2": "Click Reload to refresh company list and Quick Questions (after importing a new company).",
+        "drawer.step3": "Choose a company from the dropdown.",
+        "drawer.step4": "Two ways to ask:",
+        "drawer.quickBold": "Quick Questions",
+        "drawer.quickDesc": "Pre-generated cached FAQs. Click for instant answers (no wait).",
+        "drawer.realtimeBold": "Realtime Q&A",
+        "drawer.realtimeDesc": "Type your question and press Enter or Send. It searches sources and answers with citations.",
+        "drawer.helpNote": "Tip: If a company has no Quick Questions, its faq.json hasn't been generated yet. You can still use Realtime Q&A. Sources are clickable.",
+        "drawer.featuresTitle": "Features",
+        "drawer.featuresNote": "Tip: use Quick Questions for instant answers; use Realtime Q&A for specific questions.",
+        "drawer.updatesTitle": "Updates",
+        "updates.loading": "Loading update plan…",
+        "updates.note": "You can edit the update plan in",
+        "feat.kb": "Company knowledge base: ingest website → build index → Q&A by company",
+        "feat.faq": "Quick Questions (FAQ cache): pre-generated, click for instant answers",
+        "feat.rt": "Realtime Q&A: retrieves sources and calls the model (may take a few seconds)",
+        "feat.cite": "Citations: answers include Sources with deep links to the page",
+        "feat.auth": "API Key auth: enter the API Key at the top to use the demo",
+        "status.loadingCompanies": "Loading companies…",
+        "status.loadedCompanies": "Loaded {n} companies",
+        "status.loadFailed": "Load failed: {msg}"
+      },
+      zh: {
+        "app.title": "公司官网智能体 Demo",
+        "app.subtitle": "多语言问答、引用来源、API Key 鉴权。",
+        "meta.apiBase": "接口",
+        "meta.topk": "检索 TopK",
+        "btn.help": "使用说明 / 帮助",
+        "btn.features": "功能亮点",
+        "btn.updates": "更新计划",
+        "form.apiKey": "API Key",
+        "ph.apiKey": "例如：simon",
+        "form.company": "公司",
+        "form.companyPlaceholder": "请先加载公司",
+        "form.lang": "语言（可选）",
+        "ph.lang": "auto / en / zh / ja ...",
+        "form.stream": "流式输出",
+        "form.on": "开启",
+        "form.off": "关闭",
+        "form.realtime": "实时问答",
+        "ph.question": "请输入问题...",
+        "hint.realtime": "实时问答：会检索资料并调用模型生成回答，通常需要等待几秒。想秒出答案请用上方 Quick Questions。",
+        "btn.send": "发送",
+        "btn.reload": "重新加载",
+        "section.quick": "快速问题（Quick Questions）",
+        "section.features": "功能亮点",
+        "btn.askAnyway": "实时问答（Ask anyway）",
+        "section.answer": "回答",
+        "answer.wait": "等待提问...",
+        "section.sources": "引用来源",
+        "drawer.helpTab": "使用说明",
+        "drawer.featuresTab": "功能亮点",
+        "drawer.updatesTab": "更新计划",
+        "drawer.helpTitle": "如何使用（1 分钟上手）",
+        "drawer.step1": "在“API Key”输入框输入：simon",
+        "drawer.step2": "点击「重新加载」：刷新公司列表与 Quick Questions（导入新公司后必须点一次）",
+        "drawer.step3": "在「公司」下拉框选择要查询的公司",
+        "drawer.step4": "两种问答方式：",
+        "drawer.quickBold": "快速问题（Quick Questions）",
+        "drawer.quickDesc": "预先缓存好的常见问题，点击即可立即出答案（不用等）",
+        "drawer.realtimeBold": "实时问答",
+        "drawer.realtimeDesc": "输入问题后按 Enter 或点击发送，等待模型响应（会检索资料并给出引用 Sources）",
+        "drawer.helpNote": "小提示：若某公司没有 Quick Questions，说明 faq.json 未生成，仍可使用实时问答。答案中的 Sources 可点击跳转到官网对应段落。",
+        "drawer.featuresTitle": "功能亮点",
+        "drawer.featuresNote": "小提示：优先点 Quick Questions 秒出答案；想问更具体的问题用实时问答。",
+        "drawer.updatesTitle": "更新计划",
+        "updates.loading": "正在加载更新计划...",
+        "updates.note": "你可以在这里维护更新计划：",
+        "feat.kb": "自动公司知识库：导入官网 → 建索引 → 按公司问答",
+        "feat.faq": "快速问题（FAQ 缓存）：预先生成，点击即可返回答案（无需等待）",
+        "feat.rt": "实时问答：检索公司资料并调用模型生成回答，可能需要等待几秒",
+        "feat.cite": "引用溯源：答案附 Sources 编号，可跳转官网命中段落",
+        "feat.auth": "API Key 鉴权：需要在页面顶部输入 API Key 才能使用",
+        "status.loadingCompanies": "加载公司列表...",
+        "status.loadedCompanies": "已加载 {n} 个公司",
+        "status.loadFailed": "加载失败: {msg}"
+      }
+    };
+
+    function t(key) {
+      return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.en && I18N.en[key]) || key;
+    }
+
+    function applyI18n() {
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (!key) return;
+        el.textContent = t(key);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        if (!key) return;
+        el.setAttribute("placeholder", t(key));
+      });
+      if (langToggleText) {
+        langToggleText.textContent = currentLang.toUpperCase();
+      }
+    }
+
+    function detectDefaultLang() {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved === "en" || saved === "zh") return saved;
+
+      // 近似“根据 IP”：前端无法直接得知 IP 所在国，这里用语言 + 时区做稳健默认。
+      const nav = (navigator.language || "").toLowerCase();
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const likelyZh = nav.startsWith("zh") || tz.includes("Shanghai") || tz.includes("Chongqing") || tz.includes("Beijing") || tz.includes("Hong_Kong") || tz.includes("Taipei");
+      return likelyZh ? "zh" : "en";
+    }
+
+    function setLang(lang) {
+      currentLang = lang === "zh" ? "zh" : "en";
+      localStorage.setItem(LANG_KEY, currentLang);
+      applyI18n();
+      updateCompanyMeta();
+    }
+
+    function setStatus(message, type, loading) {
+      statusTextEl.textContent = message;
+      statusEl.className = `status ${type || ""}`.trim();
+      statusSpinnerEl.style.display = loading ? "inline-block" : "none";
+    }
+
+    function requireApiKey(actionText) {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        apiKeyInput.classList.add("input-error");
+        apiKeyInput.focus();
+        setStatus(currentLang === "zh" ? `请先输入 API Key（例如 simon），再${actionText}` : `Enter API Key (e.g., simon) before you ${actionText}`, "error");
+        return false;
+      }
+      apiKeyInput.classList.remove("input-error");
+      return true;
+    }
+
+    let lastDrawerTab = "help";
+
+    function openDrawer(which) {
+      const tab = (which === "features" || which === "updates") ? which : "help";
+
+      // 如果已打开且重复点击同一类按钮，则收起
+      if (drawer.classList.contains("open") && lastDrawerTab === tab) {
+        closeDrawer();
+        return;
+      }
+
+      drawer.classList.add("open");
+      setDrawerTab(tab);
+      lastDrawerTab = tab;
+
+      // 第一次提示：不强制遮挡用户操作，仅标记已看过
+      if (!localStorage.getItem(HELP_SEEN_KEY)) {
+        localStorage.setItem(HELP_SEEN_KEY, "true");
+      }
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove("open");
+    }
+
+    function setDrawerTab(which) {
+      const tab = (which === "features" || which === "updates") ? which : "help";
+      const isHelp = tab === "help";
+      const isFeatures = tab === "features";
+      const isUpdates = tab === "updates";
+
+      tabHelp.classList.toggle("active", isHelp);
+      tabFeatures.classList.toggle("active", isFeatures);
+      tabUpdates.classList.toggle("active", isUpdates);
+
+      drawerHelp.classList.toggle("active", isHelp);
+      drawerFeatures.classList.toggle("active", isFeatures);
+      drawerUpdates.classList.toggle("active", isUpdates);
+
+      document.getElementById("drawerTitle").textContent = isHelp ? t("btn.help") : (isFeatures ? t("btn.features") : t("btn.updates"));
+
+      if (isUpdates) {
+        loadUpdatesPlan();
+      }
+    }
+
+    async function readError(res) {
+      try {
+        const data = await res.json();
+        return data.detail || JSON.stringify(data);
+      } catch (err) {
+        return await res.text();
+      }
+    }
+
+    async function loadCompanies() {
+      if (!requireApiKey(currentLang === "zh" ? "点击重新加载" : "reload")) {
+        return;
+      }
+      setStatus(t("status.loadingCompanies"), "", true);
+      try {
+        const res = await fetch("/companies", { headers: getHeaders() });
+        if (!res.ok) {
+          const detail = await readError(res);
+          throw new Error(detail || res.statusText);
+        }
+        const companies = await res.json();
+        companySelect.innerHTML = "";
+        if (companies.length === 0) {
+          companySelect.innerHTML = '<option value="">未找到公司</option>';
+        } else {
+          for (const item of companies) {
+            const slug = typeof item === "string" ? item : item.slug || "";
+            const name = typeof item === "string" ? item : item.name || "";
+            const website = typeof item === "string" ? "" : item.website || "";
+            const option = document.createElement("option");
+            option.value = slug;
+            option.textContent = name ? `${name} (${slug})` : slug;
+            option.dataset.website = website;
+            option.dataset.hasFaq = typeof item === "string" ? "false" : String(!!item.has_faq);
+            companySelect.appendChild(option);
+          }
+        }
+        setStatus(t("status.loadedCompanies").replace("{n}", String(companies.length)), "success");
+        updateCompanyMeta();
+        loadFaq();
+      } catch (err) {
+        setStatus(t("status.loadFailed").replace("{msg}", err.message), "error");
+      }
+    }
+
+    function renderSources(sources) {
+      sourcesEl.innerHTML = "";
+      if (!sources || sources.length === 0) {
+        sourcesEl.textContent = currentLang === "zh" ? "暂无来源" : "No sources";
+        return;
+      }
+      for (const item of sources) {
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        const score = typeof item.score === "number" ? item.score.toFixed(4) : item.score;
+        const title = item.title || item.url || item.chunk_id || "Source";
+        summary.textContent = `[${item.idx || ""}] score: ${score} · ${title}`;
+        const text = document.createElement("p");
+        const snippet = item.snippet || "";
+        text.textContent = snippet;
+        const link = document.createElement("a");
+        link.href = item.deep_link || item.url || "#";
+        link.textContent = "Open";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.style.display = "inline-block";
+        link.style.marginTop = "8px";
+        details.appendChild(summary);
+        details.appendChild(text);
+        details.appendChild(link);
+        sourcesEl.appendChild(details);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function parseUpdatesMd(md) {
+      // 支持格式：
+      // ## 2026-01-07
+      // - [x] Done item
+      // - [ ] Todo item
+      const lines = String(md || "").split(/\r?\n/);
+      const days = [];
+      let current = null;
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
+        const h = line.match(/^##\s+(.+)$/);
+        if (h) {
+          if (current) days.push(current);
+          current = { date: h[1].trim(), items: [] };
+          continue;
+        }
+        const t = line.match(/^-\s*\[(x|X| )\]\s*(.+)$/);
+        if (t) {
+          if (!current) {
+            current = { date: currentLang === "zh" ? "未命名" : "Undated", items: [] };
+          }
+          current.items.push({ done: (t[1].toLowerCase() === "x"), text: t[2].trim() });
+        }
+      }
+      if (current) days.push(current);
+      return days;
+    }
+
+    function renderUpdates(days) {
+      if (!updatesBody) return;
+      if (!days || days.length === 0) {
+        updatesBody.innerHTML = `
+          <div class="updates-day">
+            <div class="updates-date"><span class="badge">—</span> ${escapeHtml(currentLang === "zh" ? "暂无更新计划" : "No updates yet")}</div>
+          </div>
+        `;
+        return;
+      }
+      updatesBody.innerHTML = days.map((d) => {
+        const items = (d.items || []).map((it) => {
+          const cls = it.done ? "updates-item done" : "updates-item";
+          const mark = it.done ? "✓" : "";
+          return `<li class="${cls}"><span class="check">${mark}</span><span class="text">${escapeHtml(it.text)}</span></li>`;
+        }).join("");
+        return `
+          <div class="updates-day">
+            <div class="updates-date"><span class="badge">${escapeHtml(d.date)}</span></div>
+            <ul class="updates-list">${items}</ul>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadUpdatesPlan() {
+      if (!updatesBody) return;
+      updatesBody.innerHTML = `
+        <div class="updates-day">
+          <div class="updates-date"><span class="badge">…</span> ${escapeHtml(t("updates.loading"))}</div>
+        </div>
+      `;
+
+      // 优先尝试 /updates.md，其次尝试 /static/updates.md（取决于后端如何托管静态资源）
+      const candidates = ["/updates.md", "/static/updates.md", "updates.md", "static/updates.md"]; 
+      let text = "";
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+          text = await res.text();
+          if (text && text.trim()) break;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      if (!text.trim()) {
+        renderUpdates([]);
+        return;
+      }
+      const days = parseUpdatesMd(text);
+      renderUpdates(days);
+    }
+
+    document.getElementById("loadCompanies").addEventListener("click", (event) => {
+      event.preventDefault();
+      loadCompanies();
+    });
+
+    companySelect.addEventListener("change", () => {
+      updateCompanyMeta();
+      loadFaq();
+    });
+
+    function updateCompanyMeta() {
+      const selected = companySelect.options[companySelect.selectedIndex];
+      if (!selected || !selected.value) {
+        companyMetaEl.textContent = "";
+        return;
+      }
+      const website = selected.dataset.website || "";
+      const hasFaq = selected.dataset.hasFaq === "true";
+      companyMetaEl.textContent = website ? `官网: ${website}${hasFaq ? " · FAQ 已缓存" : ""}` : "";
+    }
+
+    async function loadFaq() {
+      const company = companySelect.value.trim();
+      quickQuestionsEl.innerHTML = "";
+      if (!company) {
+        return;
+      }
+      if (!apiKeyInput.value.trim()) {
+        quickQuestionsEl.textContent = "请输入 API Key 后加载 Quick Questions";
+        return;
+      }
+      try {
+        const res = await fetch(`/companies/${company}/faq`, { headers: getHeaders() });
+        if (!res.ok) {
+          const detail = await readError(res);
+          throw new Error(detail || res.statusText);
+        }
+        const data = await res.json();
+        const items = data.items || [];
+        if (items.length === 0) {
+          quickQuestionsEl.textContent = "暂无缓存问题";
+          return;
+        }
+        for (const item of items) {
+          const button = document.createElement("button");
+          button.className = "secondary";
+          button.textContent = item.question;
+          button.addEventListener("click", () => {
+            questionInput.value = item.question || "";
+            answerEl.textContent = item.answer_md || "";
+            renderSources(item.sources || []);
+            langUsedEl.textContent = "";
+            setStatus("已加载缓存答案", "success");
+          });
+          quickQuestionsEl.appendChild(button);
+        }
+      } catch (err) {
+        quickQuestionsEl.textContent = "FAQ 加载失败";
+      }
+    }
+
+    async function askRealtime() {
+      const company = companySelect.value.trim();
+      const question = questionInput.value.trim();
+      const lang = langInput.value.trim();
+      const useStream = streamSelect.value === "on";
+
+      if (!requireApiKey(currentLang === "zh" ? "发送" : "send")) {
+        return;
+      }
+      if (!company) {
+        setStatus(currentLang === "zh" ? "请先选择公司" : "Select a company first", "error");
+        return;
+      }
+      if (!question) {
+        setStatus(currentLang === "zh" ? "请输入问题" : "Type a question", "error");
+        return;
+      }
+
+      setStatus(currentLang === "zh" ? "正在生成/加载中..." : "Generating…", "", true);
+      answerEl.textContent = "";
+      langUsedEl.textContent = "";
+      sourcesEl.innerHTML = "";
+
+      const params = new URLSearchParams({ company, q: question });
+      if (lang) {
+        params.set("lang", lang);
+      }
+
+      if (useStream && window.ReadableStream) {
+        await fetchStream(`/chat?${params.toString()}&stream=1`);
+        return;
+      }
+
+      await fetchOnce(`/chat?${params.toString()}`);
+    }
+
+    async function fetchOnce(url) {
+      try {
+        const res = await fetch(url, { headers: getHeaders() });
+        if (!res.ok) {
+          const detail = await readError(res);
+          throw new Error(detail || res.statusText);
+        }
+        const data = await res.json();
+        answerEl.textContent = data.answer || "";
+        langUsedEl.textContent = `语言: ${data.language || ""}`;
+        renderSources(data.sources || []);
+        setStatus(currentLang === "zh" ? "完成" : "Done", "success");
+      } catch (err) {
+        setStatus((currentLang === "zh" ? "请求失败: " : "Request failed: ") + err.message, "error");
+      }
+    }
+
+    async function fetchStream(url) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: getHeaders(),
+        });
+        if (!res.ok || !res.body) {
+          await fetchOnce(url.replace("&stream=1", ""));
+          return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buffer.indexOf("\n\n")) !== -1) {
+            const chunk = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 2);
+            if (!chunk) continue;
+            handleSseChunk(chunk);
+          }
+        }
+        setStatus(currentLang === "zh" ? "完成" : "Done", "success");
+      } catch (err) {
+        setStatus((currentLang === "zh" ? "请求失败: " : "Request failed: ") + err.message, "error");
+      }
+    }
+
+    function handleSseChunk(chunk) {
+      const lines = chunk.split("\n");
+      let event = "message";
+      let data = "";
+      for (const line of lines) {
+        if (line.startsWith("event:")) {
+          event = line.replace("event:", "").trim();
+        } else if (line.startsWith("data:")) {
+          data += line.replace("data:", "").trim();
+        }
+      }
+      if (!data) return;
+      try {
+        const payload = JSON.parse(data);
+        if (event === "delta") {
+          answerEl.textContent += payload.text || "";
+        } else if (event === "sources") {
+          renderSources(payload.sources || []);
+          langUsedEl.textContent = `语言: ${payload.language || ""}`;
+        } else if (event === "error") {
+          setStatus(`请求失败: ${payload.message || "未知错误"}`, "error");
+        }
+      } catch (err) {
+        return;
+      }
+    }
+
+    document.getElementById("askButton").addEventListener("click", async (event) => {
+      event.preventDefault();
+      await askRealtime();
+    });
+
+    askAnywayBtn.addEventListener("click", async (event) => {
+      event.preventDefault();
+      await askRealtime();
+    });
+
+    questionInput.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        await askRealtime();
+      }
+    });
+
+    helpButton.addEventListener("click", () => {
+      openDrawer("help");
+    });
+
+    featuresButton.addEventListener("click", () => {
+      openDrawer("features");
+    });
+
+    updatesButton.addEventListener("click", () => {
+      openDrawer("updates");
+    });
+
+    drawerClose.addEventListener("click", () => {
+      closeDrawer();
+    });
+
+
+    tabHelp.addEventListener("click", () => {
+      setDrawerTab("help");
+    });
+    tabFeatures.addEventListener("click", () => {
+      setDrawerTab("features");
+    });
+    tabUpdates.addEventListener("click", () => {
+      setDrawerTab("updates");
+    });
+
+    langToggle.addEventListener("click", () => {
+      setLang(currentLang === "zh" ? "en" : "zh");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if ((event.key === "Escape" || event.key === "Esc") && drawer.classList.contains("open")) {
+        closeDrawer();
+      }
+    });
+
+    // Language init
+    currentLang = detectDefaultLang();
+    applyI18n();
+    if (langToggleText) {
+      langToggleText.textContent = currentLang.toUpperCase();
+    }
+
+    if (!localStorage.getItem(HELP_SEEN_KEY)) {
+      openDrawer("help");
+    }
+
+    loadCompanies();
+  </script>
+</body>
+</html>

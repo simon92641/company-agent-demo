@@ -1,0 +1,78 @@
+.venv/
+__pycache__/
+*.pyc
+companies/*/rag/
+# macOS
+.DS_Store
+
+# env / secrets（非常重要）
+.env
+.env.*
+!.env.example
+
+# common secrets/config（按需）
+config.json
+*.key
+*.pem
+
+# logs
+*.log
+
+# python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# build/dist
+build/
+dist/
+*.egg-info/
+
+# editor
+.vscode/
+.idea/
+
+
+# generated crawled/extracted data
+companies/**/extr*/
+companies/**/extract*/
+companies/**/*.txt
+companies/**/faq.json
+companies/**/sources_meta.json
+companies/**/raw/pages/*.json
+# secrets
+config.json
+.env
+.env.*
+# --- companies generated artifacts ---
+companies/**/raw/
+companies/**/raw/pages/
+companies/**/raw/pages/**/*.html
+companies/**/raw/**/*.html
+
+companies/**/extracted/
+companies/**/extracted/**
+
+companies/**/rag/
+companies/**/rag/**
+companies/**/rag/*.npy
+companies/**/rag/*.json
+
+# also ignore common vector/db artifacts
+**/*.npy
+**/*.npz
+**/*.faiss
+**/*.index
+**/*.sqlite
+**/*.db
+
+# if you generate text dumps
+companies/**/*.txt
+# logs / debug
+logs/
+*.out
+nohup.out
+**/crawl_debug*.json
+**/*debug*.json
